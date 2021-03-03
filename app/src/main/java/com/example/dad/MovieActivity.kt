@@ -10,9 +10,10 @@ import androidx.appcompat.app.AppCompatActivity
 import com.devbrackets.android.exomedia.ui.widget.VideoView
 import java.util.*
 
-class MoviceActivity : AppCompatActivity() {
+class MovieActivity : AppCompatActivity() {
     var timer: Timer = Timer();
     lateinit var moviceView: VideoView;
+    var now_position = 0;
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -22,29 +23,49 @@ class MoviceActivity : AppCompatActivity() {
         setContentView(R.layout.activity_movice);
 
         val sharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);
+        val edit = sharedPreferences.edit();
         moviceView = findViewById<VideoView>(R.id.videoView);
 
         val bundle = intent.extras;
-        val url = bundle?.getString("moviceurl");
+        val urls = bundle?.getStringArrayList("movieurl");
+        var title = bundle?.getString("title");
 
-        moviceView.setVideoURI(Uri.parse(url));
+
         val intent = Intent(this, MainActivity::class.java);
         moviceView.setOnCompletionListener {
-            startActivity(intent);
+            if (urls?.size == 1){
+                startActivity(intent);
+            } else {
+                if (now_position == urls!!.size - 1) {
+                    edit.putInt("now_position", 0);
+                    edit.putLong("movice_duration", 0);
+                    edit.commit();
+                    startActivity(intent);
+                } else {
+                    now_position += 1;
+                    moviceView.reset();
+                    moviceView.setVideoURI(Uri.parse(urls?.get(now_position)));
+                    moviceView.start();
+                }
+            }
             println("========end================");
+        }
+
+        //上一次看的是否是这个电影，如果是跳转到上次的position
+        if (sharedPreferences.getString("title", "1").equals(title)) {
+            val getShare = getSharedPreferences("share", Context.MODE_PRIVATE);
+            var duration = getShare.getLong("movice_duration", 0);
+            now_position = sharedPreferences.getInt("now_position", 0);
+            moviceView.setVideoURI(Uri.parse(urls?.get(now_position)));
+            moviceView.seekTo(duration);
+        } else {
+            moviceView.setVideoURI(Uri.parse(urls?.get(now_position)));
         }
 
         moviceView.start();
 
-        //上一次看的是否是这个电影，如果是跳转到上次的position
-        if (sharedPreferences.getString("movice_url", "1").equals(url)) {
-            val getShare = getSharedPreferences("share", Context.MODE_PRIVATE);
-            moviceView.seekTo(getShare.getLong("movice_duration", 0));
-        }
-
-        //存储当前播放的电影url
-        val edit = sharedPreferences.edit();
-        edit.putString("movice_url", url);
+        //存储当前播放视频标题
+        edit.putString("title", title);
         edit.commit();
 
         //加入定时器，记录播放进度
@@ -52,6 +73,7 @@ class MoviceActivity : AppCompatActivity() {
             override fun run() {
                 try {
                     val currentPosition = moviceView.currentPosition;
+                    edit.putInt("now_position", now_position);
                     edit.putLong("movice_duration", currentPosition);
                     edit.commit();
                 } catch (e: Exception) {
@@ -69,7 +91,6 @@ class MoviceActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop();
         moviceView.pause();
-        timer.cancel();
     }
 
     override fun onPause() {

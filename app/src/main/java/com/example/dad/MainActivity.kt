@@ -11,7 +11,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.*
 import com.bumptech.glide.Glide
-import com.example.dad.bean.Movice
+import com.example.dad.bean.Movie
 import com.example.dad.until.AudioTool
 import com.example.dad.until.NetWork
 import okhttp3.*
@@ -22,7 +22,7 @@ import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
 
-var sList: ArrayList<Movice> = ArrayList()
+var sList: ArrayList<Movie> = ArrayList()
 
 class MainActivity : AppCompatActivity() {
     private lateinit var listView: ListView;
@@ -42,8 +42,9 @@ class MainActivity : AppCompatActivity() {
         }
 
         listView.onItemClickListener = AdapterView.OnItemClickListener { adapterView, view, i, l ->
-            val intent = Intent(this, MoviceActivity::class.java);
-            intent.putExtra("moviceurl", sList[i].url);
+            val intent = Intent(this, MovieActivity::class.java);
+            intent.putStringArrayListExtra("movieurl",  sList[i].list);
+            intent.putExtra("title", sList[i].title);
             startActivity(intent);
         }
     }
@@ -67,9 +68,15 @@ class MainActivity : AppCompatActivity() {
                     val jsonArray = JSONArray(dataMovice);
                     for (i in 0..(jsonArray.length() - 1)) {
                         var tmp = jsonArray.get(i) as JSONObject;
-                        var movice = Movice();
+                        var movice = Movie();
                         movice.img = tmp.getString("img");
-                        movice.url = tmp.getString("url");
+                        movice.title = tmp.getString("title");
+                        val list = tmp.getJSONArray("list");
+                        var data_list = ArrayList<String>();
+                        for (i in 0 until list.length()){
+                            data_list.add(list[i].toString());
+                        }
+                        movice.list = data_list;
                         sList.add(movice);
                     }
                     val msg = Message();

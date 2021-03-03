@@ -2,13 +2,7 @@ package com.example.dad.bean
 
 import java.io.Serializable
 
-class Movice : Serializable {
-    var url: String = ""
-        get() = field
-        set(value) {
-            field = value
-        }
-
+class Movie : Serializable {
     var img: String = ""
         get() = field
         set(value) {
@@ -16,6 +10,15 @@ class Movice : Serializable {
         }
 
     var title: String = ""
+        get() = field
+        set(value) {
+            field = value
+        }
+
+    /**
+     * 电视剧播放列表
+     */
+    var list: ArrayList<String> = ArrayList()
         get() = field
         set(value) {
             field = value
