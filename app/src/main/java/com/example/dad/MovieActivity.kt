@@ -2,113 +2,130 @@ package com.example.dad
 
 import android.content.Context
 import android.content.Intent
-import android.net.Uri
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.os.Handler
 import android.view.Window
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
-import com.devbrackets.android.exomedia.ui.widget.VideoView
-import java.util.*
+import com.google.android.exoplayer2.MediaItem
+import com.google.android.exoplayer2.Player
+import com.google.android.exoplayer2.SimpleExoPlayer
+import com.google.android.exoplayer2.ui.PlayerView
+
 
 class MovieActivity : AppCompatActivity() {
-    var timer: Timer = Timer();
-    lateinit var moviceView: VideoView;
+    lateinit var player: SimpleExoPlayer;
     var now_position = 0;
+    var handler = Handler();
+    var title: String = "";
+
+    var runnable: Runnable = Runnable {
+        run {
+            storageMovieData(title!!, now_position, player.currentPosition);
+            handler.postDelayed(runnable, 1000 * 10);
+        }
+    };
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         supportActionBar?.hide();
-        window.setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        setContentView(R.layout.activity_movice);
-
-        val sharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);
-        val edit = sharedPreferences.edit();
-        moviceView = findViewById<VideoView>(R.id.videoView);
+        window.setFlags(
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
+        );
+        setContentView(R.layout.activity_movie);
 
         val bundle = intent.extras;
         val urls = bundle?.getStringArrayList("movieurl");
-        var title = bundle?.getString("title");
-
-
+        title = bundle?.getString("title")!!;
         val intent = Intent(this, MainActivity::class.java);
-        moviceView.setOnCompletionListener {
-            if (urls?.size == 1){
-                startActivity(intent);
-            } else {
-                if (now_position == urls!!.size - 1) {
-                    edit.putInt("now_position", 0);
-                    edit.putLong("movice_duration", 0);
-                    edit.commit();
+        val sharedPreferences: SharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);
+
+        val videoView = findViewById<PlayerView>(R.id.videoView);
+        player = SimpleExoPlayer.Builder(this).build();
+        player.setThrowsWhenUsingWrongThread(false);
+        player.addListener(object : Player.EventListener {
+            override fun onPlaybackStateChanged(state: Int) {
+                super.onPlaybackStateChanged(state);
+                if (state == 4) {
+                    storageMovieData(title!!, 0, 0);
                     startActivity(intent);
-                } else {
-                    now_position += 1;
-                    moviceView.reset();
-                    moviceView.setVideoURI(Uri.parse(urls?.get(now_position)));
-                    moviceView.start();
                 }
             }
-            println("========end================");
+
+            override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
+                super.onMediaItemTransition(mediaItem, reason);
+                now_position = mediaItem?.mediaId!!.toInt();
+            }
+        });
+
+
+        for ((index, url) in urls!!.withIndex()!!) {
+            player.addMediaItem(
+                MediaItem.Builder().setUri(url).setMediaId(index.toString()).build()
+            )
         }
 
-        //上一次看的是否是这个电影，如果是跳转到上次的position
+        videoView.player = player;
         if (sharedPreferences.getString("title", "1").equals(title)) {
-            val getShare = getSharedPreferences("share", Context.MODE_PRIVATE);
-            var duration = getShare.getLong("movice_duration", 0);
-            now_position = sharedPreferences.getInt("now_position", 0);
-            moviceView.setVideoURI(Uri.parse(urls?.get(now_position)));
-            moviceView.seekTo(duration);
-        } else {
-            moviceView.setVideoURI(Uri.parse(urls?.get(now_position)));
+            player.seekTo(sharedPreferences.getInt("postion", 0),
+                sharedPreferences.getLong("duration", 0));
         }
 
-        moviceView.start();
+
+        player.prepare();
+        player.play();
 
         //存储当前播放视频标题
-        edit.putString("title", title);
-        edit.commit();
+        storageMovieData(title!!, now_position, player.contentDuration);
 
-        //加入定时器，记录播放进度
-        timer.schedule(object : TimerTask() {
-            override fun run() {
-                try {
-                    val currentPosition = moviceView.currentPosition;
-                    edit.putInt("now_position", now_position);
-                    edit.putLong("movice_duration", currentPosition);
-                    edit.commit();
-                } catch (e: Exception) {
-                };
-            }
-        }, Date(), 1000 * 60);
+        handler.postDelayed(runnable, 1000 * 60);
+    }
+
+    /**
+     * @param title 视频标题
+     * @param postion 视频在列表中的位置
+     * @param duration 视频播放进度
+     * 存储视频播放的信息
+     */
+    fun storageMovieData(title: String, postion: Int, duration: Long) {
+        val getShare = getSharedPreferences("share", Context.MODE_PRIVATE);
+        val edit = getShare.edit();
+        edit.putString("title", title);
+        edit.putInt("postion", postion);
+        edit.putLong("duration", duration);
+        edit.commit();
     }
 
     override fun onDestroy() {
-        super.onDestroy();
-        timer.cancel();
+        super.onDestroy()
+        player.release();
+        now_position = 0;
     }
-
 
     override fun onStop() {
         super.onStop();
-        moviceView.pause();
+        player.pause();
     }
 
     override fun onPause() {
         super.onPause()
-        if (moviceView.isPlaying){
-            moviceView.pause();
+        if (player.isPlaying) {
+            player.pause();
         }
     }
 
     override fun onResume() {
         super.onResume()
-        if (!moviceView.isPlaying){
-            moviceView.restart();
+        if (!player.isPlaying) {
+            player.play();
         }
     }
 
     override fun onRestart() {
         super.onRestart()
-        moviceView.start();
+        player.play();
     }
 }
+

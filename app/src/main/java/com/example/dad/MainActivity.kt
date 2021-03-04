@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
+    //初始化视图
     private fun initView() {
         Thread(Runnable {
             sList = ArrayList();
@@ -87,6 +87,9 @@ class MainActivity : AppCompatActivity() {
         }).start();
     }
 
+    override fun onDestroy() {
+        super.onDestroy();
+    }
     //如果检测到网络未开启，则10秒检测一次网络状态
     private fun loopListener(){
         var timer: Timer = Timer();
