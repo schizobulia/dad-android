@@ -69,7 +69,9 @@ class MovieActivity : AppCompatActivity() {
 
         videoView.player = player;
         if (sharedPreferences.getString("title", "1").equals(title)) {
-            player.seekTo(sharedPreferences.getInt("postion", 0),
+            now_position = sharedPreferences.getInt("postion", 0);
+            println(now_position);
+            player.seekTo(now_position,
                 sharedPreferences.getLong("duration", 0));
         }
 
@@ -101,7 +103,6 @@ class MovieActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy()
         player.release();
-        now_position = 0;
     }
 
     override fun onStop() {
