@@ -41,5 +41,10 @@
       <option name="name" value="maven2" />
       <option name="url" value="http://maven.aliyun.com/nexus/content/repositories/jcenter" />
     </remote-repository>
+    <remote-repository>
+      <option name="id" value="IDEScout, Inc." />
+      <option name="name" value="IDEScout, Inc." />
+      <option name="url" value="http://www.idescout.com/maven/repo/" />
+    </remote-repository>
   </component>
 </project>

@@ -1,31 +1,21 @@
 package com.example.dad.bean
 
-import java.io.Serializable
-
-class Movie : Serializable {
-
+//记录视频播放的状态
+class RecordMovie {
     var id: Int = 0
         get() = field
         set(value) {
             field = value
         }
 
-    var img: String = ""
+    var postion: Int = 0
         get() = field
         set(value) {
             field = value
         }
 
-    var title: String = ""
-        get() = field
-        set(value) {
-            field = value
-        }
 
-    /**
-     * 电视剧播放列表
-     */
-    var list: ArrayList<String> = ArrayList()
+    var duration: Long = 0
         get() = field
         set(value) {
             field = value

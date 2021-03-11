@@ -14,6 +14,5 @@ class AudioTool {
         mediaPlayer.setDataSource(fd.fileDescriptor, fd.startOffset, fd.length);
         mediaPlayer.prepare();
         mediaPlayer.start();
-        println("===========");
     }
 }

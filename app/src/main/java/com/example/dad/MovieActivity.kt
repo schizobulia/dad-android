@@ -1,31 +1,34 @@
 package com.example.dad
 
-import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
 import android.os.Handler
 import android.view.Window
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import com.example.dad.bean.RecordMovie
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.PlayerView
+import kotlin.properties.Delegates
 
 
 class MovieActivity : AppCompatActivity() {
-    lateinit var player: SimpleExoPlayer;
-    var now_position = 0;
-    var handler = Handler();
-    var title: String = "";
+    private var mApp: MainApplication by Delegates.notNull();
+    private lateinit var player: SimpleExoPlayer;
+    private var now_position = 0;
+    private var handler = Handler();
+    private var id: Int = 0;
+
 
     var runnable: Runnable = Runnable {
         run {
-            storageMovieData(title!!, now_position, player.currentPosition);
-            handler.postDelayed(runnable, 1000 * 10);
+            storageMovieData(id, now_position, player.currentPosition);
+            handler.postDelayed(runnable, 1000 * 20);
         }
     };
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState);
         requestWindowFeature(Window.FEATURE_NO_TITLE);
@@ -35,12 +38,12 @@ class MovieActivity : AppCompatActivity() {
             WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
         setContentView(R.layout.activity_movie);
+        mApp = application as MainApplication;
 
         val bundle = intent.extras;
         val urls = bundle?.getStringArrayList("movieurl");
-        title = bundle?.getString("title")!!;
+        id = bundle?.getInt("id")!!;
         val intent = Intent(this, MainActivity::class.java);
-        val sharedPreferences: SharedPreferences = getSharedPreferences("share", Context.MODE_PRIVATE);
 
         val videoView = findViewById<PlayerView>(R.id.videoView);
         player = SimpleExoPlayer.Builder(this).build();
@@ -49,7 +52,7 @@ class MovieActivity : AppCompatActivity() {
             override fun onPlaybackStateChanged(state: Int) {
                 super.onPlaybackStateChanged(state);
                 if (state == 4) {
-                    storageMovieData(title!!, 0, 0);
+                    storageMovieData(id, 0, 0);
                     startActivity(intent);
                 }
             }
@@ -68,36 +71,41 @@ class MovieActivity : AppCompatActivity() {
         }
 
         videoView.player = player;
-        if (sharedPreferences.getString("title", "1").equals(title)) {
-            now_position = sharedPreferences.getInt("postion", 0);
-            println(now_position);
-            player.seekTo(now_position,
-                sharedPreferences.getLong("duration", 0));
+
+        var startM = mApp.dbHelper.getItemById(id);
+        if (startM.id != 0) {
+            player.seekTo(startM.postion, startM.duration);
+            storageMovieData(startM.id, startM.postion, startM.duration);
+        } else {
+            storageMovieData(id, now_position, player.contentDuration);
         }
 
 
         player.prepare();
         player.play();
 
-        //存储当前播放视频标题
-        storageMovieData(title!!, now_position, player.contentDuration);
+        //存储当前播放视频id
 
-        handler.postDelayed(runnable, 1000 * 60);
+
+        handler.postDelayed(runnable, 1000 * 20);
     }
 
     /**
-     * @param title 视频标题
+     * @param id 视频id
      * @param postion 视频在列表中的位置
      * @param duration 视频播放进度
      * 存储视频播放的信息
      */
-    fun storageMovieData(title: String, postion: Int, duration: Long) {
-        val getShare = getSharedPreferences("share", Context.MODE_PRIVATE);
-        val edit = getShare.edit();
-        edit.putString("title", title);
-        edit.putInt("postion", postion);
-        edit.putLong("duration", duration);
-        edit.commit();
+    fun storageMovieData(id: Int, postion: Int, duration: Long) {
+        var rm = RecordMovie();
+        rm.id = id;
+        rm.postion = postion;
+        rm.duration = duration;
+        if (mApp.dbHelper.getItemById(id).id != 0) {
+            mApp.dbHelper.updateItemById(rm);
+        } else {
+            mApp.dbHelper.insertRecord(rm);
+        }
     }
 
     override fun onDestroy() {
@@ -108,6 +116,7 @@ class MovieActivity : AppCompatActivity() {
     override fun onStop() {
         super.onStop();
         player.pause();
+        handler.removeCallbacks(runnable);
     }
 
     override fun onPause() {

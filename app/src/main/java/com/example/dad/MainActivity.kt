@@ -44,7 +44,7 @@ class MainActivity : AppCompatActivity() {
         listView.onItemClickListener = AdapterView.OnItemClickListener { adapterView, view, i, l ->
             val intent = Intent(this, MovieActivity::class.java);
             intent.putStringArrayListExtra("movieurl",  sList[i].list);
-            intent.putExtra("title", sList[i].title);
+            intent.putExtra("id", sList[i].id);
             startActivity(intent);
         }
     }
@@ -71,6 +71,7 @@ class MainActivity : AppCompatActivity() {
                         var movice = Movie();
                         movice.img = tmp.getString("img");
                         movice.title = tmp.getString("title");
+                        movice.id = tmp.getInt("id");
                         val list = tmp.getJSONArray("list");
                         var data_list = ArrayList<String>();
                         for (i in 0 until list.length()){
