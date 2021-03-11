@@ -43,7 +43,7 @@ class MainActivity : AppCompatActivity() {
 
         listView.onItemClickListener = AdapterView.OnItemClickListener { adapterView, view, i, l ->
             val intent = Intent(this, MovieActivity::class.java);
-            intent.putStringArrayListExtra("movieurl",  sList[i].list);
+            intent.putStringArrayListExtra("movieurl", sList[i].list);
             intent.putExtra("id", sList[i].id);
             startActivity(intent);
         }
@@ -54,8 +54,8 @@ class MainActivity : AppCompatActivity() {
         Thread(Runnable {
             sList = ArrayList();
             val request = Request.Builder()
-                    .url("https://demo.51jcjgzy.cn/movie/test.json")
-                    .build();
+                .url("https://demo.51jcjgzy.cn/movie/test.json")
+                .build();
             val okHttpClient = OkHttpClient();
             val execute = okHttpClient.newCall(request);
             execute.enqueue(object : Callback {
@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
                         movice.id = tmp.getInt("id");
                         val list = tmp.getJSONArray("list");
                         var data_list = ArrayList<String>();
-                        for (i in 0 until list.length()){
+                        for (i in 0 until list.length()) {
                             data_list.add(list[i].toString());
                         }
                         movice.list = data_list;
@@ -91,8 +91,9 @@ class MainActivity : AppCompatActivity() {
     override fun onDestroy() {
         super.onDestroy();
     }
+
     //如果检测到网络未开启，则10秒检测一次网络状态
-    private fun loopListener(){
+    private fun loopListener() {
         var timer: Timer = Timer();
         timer.schedule(object : TimerTask() {
             override fun run() {

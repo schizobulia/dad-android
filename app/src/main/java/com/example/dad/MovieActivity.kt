@@ -84,9 +84,6 @@ class MovieActivity : AppCompatActivity() {
         player.prepare();
         player.play();
 
-        //存储当前播放视频id
-
-
         handler.postDelayed(runnable, 1000 * 20);
     }
 
