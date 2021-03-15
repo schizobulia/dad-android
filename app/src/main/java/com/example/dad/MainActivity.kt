@@ -1,16 +1,12 @@
 package com.example.dad
 
-import android.content.Context
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
-import android.view.LayoutInflater
-import android.view.View
-import android.view.ViewGroup
 import android.widget.*
-import com.bumptech.glide.Glide
+import com.example.dad.adapter.MoviceListAdapter
 import com.example.dad.bean.Movie
 import com.example.dad.until.AudioTool
 import com.example.dad.until.NetWork
@@ -22,11 +18,12 @@ import java.lang.ref.WeakReference
 import java.util.*
 import kotlin.collections.ArrayList
 
-var sList: ArrayList<Movie> = ArrayList()
+private var sList: ArrayList<Movie> = ArrayList();
 
 class MainActivity : AppCompatActivity() {
     private lateinit var listView: ListView;
     private val mHandler = MyHandler(this);
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
@@ -54,16 +51,23 @@ class MainActivity : AppCompatActivity() {
         Thread(Runnable {
             sList = ArrayList();
             val request = Request.Builder()
-                .url("https://demo.51jcjgzy.cn/movie/test.json")
-                .build();
+                    .url("https://demo.51jcjgzy.cn/movie/test.json")
+                    .build();
             val okHttpClient = OkHttpClient();
             val execute = okHttpClient.newCall(request);
             execute.enqueue(object : Callback {
                 override fun onFailure(call: Call, e: IOException) {
-                    Toast.makeText(this@MainActivity, "数据获取失败", Toast.LENGTH_SHORT);
+                    loopListener();
+                    AudioTool().playerAudio(this@MainActivity, "network_error.mp3");
                 }
 
                 override fun onResponse(call: Call, response: Response) {
+                    if (response.code !== 200) {
+                        loopListener();
+                        AudioTool().playerAudio(this@MainActivity, "network_error.mp3");
+                        return;
+                    }
+
                     val dataMovice = response.body?.string();
                     val jsonArray = JSONArray(dataMovice);
                     for (i in 0..(jsonArray.length() - 1)) {
@@ -88,10 +92,6 @@ class MainActivity : AppCompatActivity() {
         }).start();
     }
 
-    override fun onDestroy() {
-        super.onDestroy();
-    }
-
     //如果检测到网络未开启，则10秒检测一次网络状态
     private fun loopListener() {
         var timer: Timer = Timer();
@@ -105,59 +105,20 @@ class MainActivity : AppCompatActivity() {
         }, Date(), 1000 * 10);
     }
 
-    class MyHandler(activity: MainActivity) : Handler() {
+    override fun onDestroy() {
+        super.onDestroy();
+    }
+
+    private class MyHandler(activity: MainActivity) : Handler() {
         private val mWeakReference = WeakReference<MainActivity>(activity)  // 弱引用 activity 避免内存泄漏
 
         override fun handleMessage(msg: Message) {
             val mainActivity = mWeakReference.get()
             when (msg.what) {
                 1 -> {
-                    mainActivity?.listView!!.adapter = MoviceListAdapter(mainActivity);
+                    mainActivity?.listView!!.adapter = MoviceListAdapter(mainActivity, sList);
                 }
             }
-        }
-    }
-
-    private class MoviceListAdapter(context: Context) : BaseAdapter() {
-        private val mInflator: LayoutInflater
-
-        init {
-            this.mInflator = LayoutInflater.from(context)
-        }
-
-        override fun getCount(): Int {
-            return sList.size
-        }
-
-        override fun getItem(position: Int): Any {
-            return sList[position]
-        }
-
-        override fun getItemId(position: Int): Long {
-            return position.toLong()
-        }
-
-        override fun getView(position: Int, convertView: View?, parent: ViewGroup): View? {
-            val view: View?
-            val vh: ListRowHolder
-            if (convertView == null) {
-                view = this.mInflator.inflate(R.layout.list_row, parent, false)
-                vh = ListRowHolder(view)
-                view.tag = vh
-            } else {
-                view = convertView
-                vh = view.tag as ListRowHolder
-            }
-            Glide.with(vh.img).load(sList[position].img).into(vh.img);
-            return view
-        }
-    }
-
-    private class ListRowHolder(row: View?) {
-        val img: ImageView
-
-        init {
-            this.img = row?.findViewById(R.id.img_item) as ImageView
         }
     }
 }
