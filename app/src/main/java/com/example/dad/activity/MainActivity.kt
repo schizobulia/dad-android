@@ -1,4 +1,4 @@
-package com.example.dad
+package com.example.dad.activity
 
 import android.content.Intent
 import androidx.appcompat.app.AppCompatActivity
@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.os.Handler
 import android.os.Message
 import android.widget.*
+import com.example.dad.R
 import com.example.dad.adapter.MoviceListAdapter
 import com.example.dad.bean.Movie
 import com.example.dad.until.AudioTool
@@ -84,7 +85,7 @@ class MainActivity : AppCompatActivity() {
                         movice.list = data_list;
                         sList.add(movice);
                     }
-                    val msg = Message();
+                    var msg = Message();
                     msg.what = 1;
                     mHandler.sendMessage(msg);
                 }

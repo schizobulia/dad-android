@@ -1,16 +1,22 @@
-package com.example.dad
+package com.example.dad.activity
 
 import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
+import android.os.Message
 import android.view.Window
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
+import com.example.dad.MainApplication
+import com.example.dad.R
 import com.example.dad.bean.RecordMovie
+import com.example.dad.until.AudioTool
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
 import com.google.android.exoplayer2.ui.PlayerView
+import java.lang.ref.WeakReference
+import java.util.*
 import kotlin.properties.Delegates
 
 
@@ -20,6 +26,7 @@ class MovieActivity : AppCompatActivity() {
     private var now_position = 0;
     private var handler = Handler();
     private var id: Int = 0;
+    private var mHandler = MyHandler(this);
 
 
     var runnable: Runnable = Runnable {
@@ -34,8 +41,8 @@ class MovieActivity : AppCompatActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         supportActionBar?.hide();
         window.setFlags(
-            WindowManager.LayoutParams.FLAG_FULLSCREEN,
-            WindowManager.LayoutParams.FLAG_FULLSCREEN
+                WindowManager.LayoutParams.FLAG_FULLSCREEN,
+                WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
         setContentView(R.layout.activity_movie);
         mApp = application as MainApplication;
@@ -55,6 +62,10 @@ class MovieActivity : AppCompatActivity() {
                     storageMovieData(id, 0, 0);
                     startActivity(intent);
                 }
+                if (state == 2) {
+                    println("=====================loading");
+                    loadingCheck();
+                }
             }
 
             override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
@@ -66,7 +77,7 @@ class MovieActivity : AppCompatActivity() {
 
         for ((index, url) in urls!!.withIndex()!!) {
             player.addMediaItem(
-                MediaItem.Builder().setUri(url).setMediaId(index.toString()).build()
+                    MediaItem.Builder().setUri(url).setMediaId(index.toString()).build()
             )
         }
 
@@ -105,6 +116,19 @@ class MovieActivity : AppCompatActivity() {
         }
     }
 
+    //长时间加载之后出现提示音
+    private fun loadingCheck() {
+        var loadingTimer: Timer = Timer();
+        loadingTimer.schedule(object : TimerTask() {
+            override fun run() {
+                var msg = Message();
+                msg.what = 1;
+                mHandler.sendMessage(msg);
+                loadingTimer.cancel();
+            }
+        }, 1000 * 60 * 2);
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         player.release();
@@ -134,5 +158,21 @@ class MovieActivity : AppCompatActivity() {
         super.onRestart()
         player.play();
     }
-}
 
+    private class MyHandler(activity: MovieActivity) : Handler() {
+        private val mWeakReference = WeakReference<MovieActivity>(activity)
+        override fun handleMessage(msg: Message) {
+            val movieActivity = mWeakReference.get()
+            when (msg.what) {
+                1 -> {
+                    if (!movieActivity!!.player.isPlaying) {
+                        movieActivity.player.release();
+                        AudioTool().playerAudio(movieActivity!!, "loading_video.mp3");
+//                        movieActivity.finish();
+                    }
+                }
+            }
+        }
+    }
+
+}
