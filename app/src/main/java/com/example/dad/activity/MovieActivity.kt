@@ -4,6 +4,7 @@ import android.content.Intent
 import android.os.Bundle
 import android.os.Handler
 import android.os.Message
+import android.view.View
 import android.view.Window
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
@@ -11,6 +12,7 @@ import com.example.dad.MainApplication
 import com.example.dad.R
 import com.example.dad.bean.RecordMovie
 import com.example.dad.until.AudioTool
+import com.github.ybq.android.spinkit.SpinKitView
 import com.google.android.exoplayer2.MediaItem
 import com.google.android.exoplayer2.Player
 import com.google.android.exoplayer2.SimpleExoPlayer
@@ -27,6 +29,8 @@ class MovieActivity : AppCompatActivity() {
     private var handler = Handler();
     private var id: Int = 0;
     private var mHandler = MyHandler(this);
+    private var spinKitView: SpinKitView? = null;
+    private var showloadingTimer: Timer = Timer();
 
 
     var runnable: Runnable = Runnable {
@@ -41,12 +45,13 @@ class MovieActivity : AppCompatActivity() {
         requestWindowFeature(Window.FEATURE_NO_TITLE);
         supportActionBar?.hide();
         window.setFlags(
-                WindowManager.LayoutParams.FLAG_FULLSCREEN,
-                WindowManager.LayoutParams.FLAG_FULLSCREEN
+            WindowManager.LayoutParams.FLAG_FULLSCREEN,
+            WindowManager.LayoutParams.FLAG_FULLSCREEN
         );
         setContentView(R.layout.activity_movie);
-        mApp = application as MainApplication;
+        spinKitView = findViewById<SpinKitView>(R.id.spin_kit);
 
+        mApp = application as MainApplication;
         val bundle = intent.extras;
         val urls = bundle?.getStringArrayList("movieurl");
         id = bundle?.getInt("id")!!;
@@ -63,8 +68,8 @@ class MovieActivity : AppCompatActivity() {
                     startActivity(intent);
                 }
                 if (state == 2) {
-                    println("=====================loading");
                     loadingCheck();
+                    showLoading();
                 }
             }
 
@@ -74,10 +79,9 @@ class MovieActivity : AppCompatActivity() {
             }
         });
 
-
         for ((index, url) in urls!!.withIndex()!!) {
             player.addMediaItem(
-                    MediaItem.Builder().setUri(url).setMediaId(index.toString()).build()
+                MediaItem.Builder().setUri(url).setMediaId(index.toString()).build()
             )
         }
 
@@ -129,9 +133,21 @@ class MovieActivity : AppCompatActivity() {
         }, 1000 * 60 * 2);
     }
 
+    //显示视频加载动画
+    private fun showLoading() {
+        showloadingTimer.schedule(object : TimerTask() {
+            override fun run() {
+                var msg = Message();
+                msg.what = 2;
+                mHandler.sendMessage(msg);
+            }
+        }, Date(), 1000 * 3);
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         player.release();
+        showloadingTimer.cancel();
     }
 
     override fun onStop() {
@@ -168,11 +184,17 @@ class MovieActivity : AppCompatActivity() {
                     if (!movieActivity!!.player.isPlaying) {
                         movieActivity.player.release();
                         AudioTool().playerAudio(movieActivity!!, "loading_video.mp3");
-//                        movieActivity.finish();
+                        movieActivity.finish();
+                    }
+                }
+                2 -> {
+                    if (movieActivity!!.player.isPlaying) {
+                        movieActivity.spinKitView!!.visibility = View.GONE;
+                    } else {
+                        movieActivity.spinKitView!!.visibility = View.VISIBLE;
                     }
                 }
             }
         }
     }
-
 }
