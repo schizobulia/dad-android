@@ -31,6 +31,7 @@ class MovieActivity : AppCompatActivity() {
     private var mHandler = MyHandler(this);
     private var spinKitView: SpinKitView? = null;
     private var showloadingTimer: Timer = Timer();
+    private var err_num: Int = 3;
 
 
     var runnable: Runnable = Runnable {
@@ -122,6 +123,7 @@ class MovieActivity : AppCompatActivity() {
 
     //长时间加载之后出现提示音
     private fun loadingCheck() {
+        if (err_num === 0) { return }
         var loadingTimer: Timer = Timer();
         loadingTimer.schedule(object : TimerTask() {
             override fun run() {
@@ -130,7 +132,8 @@ class MovieActivity : AppCompatActivity() {
                 mHandler.sendMessage(msg);
                 loadingTimer.cancel();
             }
-        }, 1000 * 60 * 2);
+        }, 1000 * 60 * 1);
+        err_num--;
     }
 
     //显示视频加载动画
@@ -141,7 +144,7 @@ class MovieActivity : AppCompatActivity() {
                 msg.what = 2;
                 mHandler.sendMessage(msg);
             }
-        }, Date(), 1000 * 3);
+        }, Date(), 1000 * 3)
     }
 
     override fun onDestroy() {
